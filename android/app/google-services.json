@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "608461874061",
+    "project_id": "couple-wellness",
+    "storage_bucket": "couple-wellness.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:608461874061:android:d3e921d174ea064667d3c4",
+        "android_client_info": {
+          "package_name": "com.example.couple_wellness"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBo0Ic4Na8aElUq6Ulcunf7Nw-18VxCVIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
