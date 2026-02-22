@@ -1,5 +1,9 @@
 import 'package:couple_wellness/constants/app_colors.dart';
 import 'package:couple_wellness/screens/auth/sign_in_screen.dart';
+import 'package:couple_wellness/screens/settings/account_screen.dart';
+import 'package:couple_wellness/screens/settings/help_support_screen.dart';
+import 'package:couple_wellness/screens/settings/notifications_screen.dart';
+import 'package:couple_wellness/screens/settings/privacy_security_screen.dart';
 import 'package:couple_wellness/screens/settings/subscription_screen.dart';
 import 'package:couple_wellness/screens/settings/sway_settings_screen.dart';
 import 'package:couple_wellness/services/auth_service.dart';
@@ -110,11 +114,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsItem(
                     icon: Icons.person_outline,
                     title: "Account",
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AccountScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildSettingsItem(
                     icon: Icons.credit_card_outlined,
-                    title: "Subscription",
+                    title: "Premium Access",
                     onTap: () {
                       Navigator.push(
                         context,
@@ -147,12 +158,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsItem(
                     icon: Icons.notifications_none_outlined,
                     title: "Notifications",
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildSettingsItem(
                     icon: Icons.shield_outlined,
                     title: "Privacy & Security",
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PrivacySecurityScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ]),
                 SizedBox(height: 20.h),
@@ -160,7 +185,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSettingsItem(
                     icon: Icons.help_outline_rounded,
                     title: "Help & Support",
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpSupportScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ]),
                 SizedBox(height: 20.h),

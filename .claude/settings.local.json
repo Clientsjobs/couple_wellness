@@ -3,7 +3,9 @@
     "allow": [
       "Bash(flutter run:*)",
       "Bash(echo Hot reload attempt:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(head:*)",
+      "Bash(flutter clean:*)"
     ]
   }
 }

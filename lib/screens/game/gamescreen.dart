@@ -83,9 +83,9 @@ class _GamesScreenState extends State<GamesScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error starting game: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error starting game: $e')));
       }
     }
   }
@@ -96,7 +96,8 @@ class _GamesScreenState extends State<GamesScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Premium Feature'),
         content: const Text(
-            'This game requires a premium subscription. Upgrade to access all games!'),
+          'This game requires a premium subscription. Upgrade to access all games!',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -201,51 +202,53 @@ class _GamesScreenState extends State<GamesScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_errorMessage!),
-                            ElevatedButton(
-                              onPressed: _loadGames,
-                              child: const Text('Retry'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_errorMessage!),
+                        ElevatedButton(
+                          onPressed: _loadGames,
+                          child: const Text('Retry'),
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadGames,
-                        child: ListView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 24.w, vertical: 24.h),
-                          children: [
-                            // Static games with Firebase integration
-                            _buildGameCard(
-                              gameId: 'truth_or_truth',
-                              title: "Truth or Truth",
-                              description:
-                                  "Deep questions to spark meaningful conversations",
-                              players: "2 players",
-                              time: "15 min",
-                              headerColor: cardPinkHeader,
-                              icon: Icons.favorite_border,
-                            ),
-                            SizedBox(height: 24.h),
-                            _buildGameCard(
-                              gameId: 'love_language_quiz',
-                              title: "Love Language Quiz",
-                              description:
-                                  "Discover how you both give and receive love",
-                              players: "2 players",
-                              time: "10 min",
-                              headerColor: cardPurpleHeader,
-                              icon: Icons.people,
-                            ),
-                            SizedBox(height: 40.h),
-                          ],
-                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadGames,
+                    child: ListView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 24.h,
                       ),
+                      children: [
+                        // Static games with Firebase integration
+                        _buildGameCard(
+                          gameId: 'truth_or_truth',
+                          title: "Truth or Truth",
+                          description:
+                              "Deep questions to spark meaningful conversations",
+                          players: "2 players",
+                          time: "15 min",
+                          headerColor: cardPinkHeader,
+                          icon: Icons.favorite_border,
+                        ),
+                        SizedBox(height: 24.h),
+                        _buildGameCard(
+                          gameId: 'love_language_quiz',
+                          title: "Love Language Quiz",
+                          description:
+                              "Discover how you both give and receive love",
+                          players: "2 players",
+                          time: "10 min",
+                          headerColor: cardPurpleHeader,
+                          icon: Icons.people,
+                        ),
+                        SizedBox(height: 40.h),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -315,13 +318,15 @@ class _GamesScreenState extends State<GamesScreen> {
                     // Status badge
                     Container(
                       padding: EdgeInsets.symmetric(
-                          horizontal: 8.w, vertical: 4.h),
+                        horizontal: 8.w,
+                        vertical: 4.h,
+                      ),
                       decoration: BoxDecoration(
                         color: status == 'Completed'
                             ? Colors.green.withOpacity(0.1)
                             : status == 'In Progress'
-                                ? Colors.orange.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -331,8 +336,8 @@ class _GamesScreenState extends State<GamesScreen> {
                           color: status == 'Completed'
                               ? Colors.green
                               : status == 'In Progress'
-                                  ? Colors.orange
-                                  : Colors.grey,
+                              ? Colors.orange
+                              : Colors.grey,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -433,9 +438,7 @@ class TruthOrTruthGameScreen extends StatelessWidget {
         title: const Text('Truth or Truth'),
         backgroundColor: const Color(0xFFFF4D8D),
       ),
-      body: const Center(
-        child: Text('Truth or Truth Game Content'),
-      ),
+      body: const Center(child: Text('Truth or Truth Game Content')),
     );
   }
 }
@@ -450,9 +453,7 @@ class LoveLanguageQuizScreen extends StatelessWidget {
         title: const Text('Love Language Quiz'),
         backgroundColor: const Color(0xFFB388FF),
       ),
-      body: const Center(
-        child: Text('Love Language Quiz Content'),
-      ),
+      body: const Center(child: Text('Love Language Quiz Content')),
     );
   }
 }
@@ -467,9 +468,7 @@ class PlaceholderGameScreen extends StatelessWidget {
         title: const Text('Game'),
         backgroundColor: const Color(0xFF8B42FF),
       ),
-      body: const Center(
-        child: Text('Game Content Coming Soon'),
-      ),
+      body: const Center(child: Text('Game Content Coming Soon')),
     );
   }
 }
