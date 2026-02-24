@@ -37,6 +37,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // 4. Navigate to next screen after delay
     Timer(const Duration(seconds: 4), () {
+      if (!mounted) return;
       // Replace with your home route
       Navigator.pushReplacement(
         context,

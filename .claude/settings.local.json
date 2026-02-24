@@ -5,7 +5,16 @@
       "Bash(echo Hot reload attempt:*)",
       "Bash(find:*)",
       "Bash(head:*)",
-      "Bash(flutter clean:*)"
+      "Bash(flutter clean:*)",
+      "Bash(flutter pub:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(cd:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(flutter devices:*)",
+      "Bash(echo Hot reload triggered:*)",
+      "Bash(flutter doctor:*)",
+      "Bash(echo Hot reload command sent:*o h over floe hjata h usy set kren bai mn thk ata h bs french ki lagnusge mn hi as ahta h bs usy set kren baqi koi chnging nhi krni h)"
     ]
   }
 }

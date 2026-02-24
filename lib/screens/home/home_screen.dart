@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:couple_wellness/constants/app_colors.dart';
+import 'package:couple_wellness/l10n/app_localizations.dart';
 import 'package:couple_wellness/screens/chat/chat_screen.dart';
 import 'package:couple_wellness/screens/game/gamescreen.dart';
 import 'package:couple_wellness/screens/kegel/kegel_screen.dart';
@@ -39,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     try {
       final userData = await _userService.getUserData();
-      if (userData != null) {
+      if (userData != null && mounted) {
         setState(() {
           _displayName = userData['displayName'] ?? '';
           _subscriptionStatus = userData['subscriptionStatus'] ?? 'free';
@@ -55,25 +56,31 @@ class _HomeScreenState extends State<HomeScreen> {
         // Check trial status
         if (_subscriptionStatus == 'trial') {
           final remaining = await _userService.getTrialTimeRemaining();
-          setState(() {
-            _trialTimeRemaining = remaining;
-          });
+          if (mounted) {
+            setState(() {
+              _trialTimeRemaining = remaining;
+            });
+          }
 
           // Check if trial expired
           if (remaining == null || remaining.inSeconds <= 0) {
             await _userService.upgradeToPremium();
-            setState(() {
-              _subscriptionStatus = 'free';
-            });
+            if (mounted) {
+              setState(() {
+                _subscriptionStatus = 'free';
+              });
+            }
           }
         }
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -84,8 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your 48-hour free trial has started!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).trialStarted),
             backgroundColor: Colors.green,
           ),
         );
@@ -94,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to start trial: $e'),
+            content: Text('${AppLocalizations.of(context).failedToStartTrial}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -106,9 +113,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final langCode = lang.substring(0, 2).toLowerCase();
     try {
       await _userService.updateLanguage(langCode);
-      setState(() {
-        _preferredLanguage = lang;
-      });
+      if (mounted) {
+        setState(() {
+          _preferredLanguage = lang;
+        });
+      }
     } catch (e) {
       debugPrint('Error updating language: $e');
     }
@@ -147,13 +156,12 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Premium Feature'),
-        content: const Text(
-            'This feature requires a premium subscription. Start your free trial to access all features!'),
+        title: Text(AppLocalizations.of(context).premiumFeature),
+        content: Text(AppLocalizations.of(context).premiumMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -163,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.brandPurple,
             ),
-            child: const Text('Start Free Trial'),
+            child: Text(AppLocalizations.of(context).startFreeTrial),
           ),
         ],
       ),
@@ -172,18 +180,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getWelcomeMessage() {
     if (_displayName.isEmpty) {
-      return 'Welcome\nBack';
+      return AppLocalizations.of(context).welcomeBack;
     }
-    return 'Welcome\n$_displayName';
+    return '${AppLocalizations.of(context).welcome}\n$_displayName';
   }
 
   String _getTrialMessage() {
     if (_subscriptionStatus == 'trial' && _trialTimeRemaining != null) {
       final hours = _trialTimeRemaining!.inHours;
       final minutes = _trialTimeRemaining!.inMinutes % 60;
-      return '$hours:${minutes.toString().padLeft(2, '0')} hours remaining';
+      return '$hours:${minutes.toString().padLeft(2, '0')} ${AppLocalizations.of(context).hoursRemaining}';
     }
-    return 'Full access to all features';
+    return AppLocalizations.of(context).fullAccess;
   }
 
   @override
@@ -277,7 +285,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               SizedBox(height: 10.h),
                               Text(
-                                'Explore our features designed for couples',
+                                AppLocalizations.of(context).exploreFeatures,
                                 style: TextStyle(
                                     color: Colors.white70, fontSize: 16.fSize),
                               ),
@@ -330,10 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       children: [
                                         Text(
                                           _subscriptionStatus == 'premium'
-                                              ? 'Premium Active'
+                                              ? AppLocalizations.of(context).premiumActive
                                               : _subscriptionStatus == 'trial'
-                                                  ? 'Trial Active'
-                                                  : 'Start your 48-hour free trial',
+                                                  ? AppLocalizations.of(context).trialActive
+                                                  : AppLocalizations.of(context).startTrial,
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
@@ -372,26 +380,24 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 24.w),
                         children: [
                           _buildFeatureCard(
-                            title: 'Couples Games',
-                            subtitle:
-                                'Fun activities to deepen your connection',
+                            title: AppLocalizations.of(context).couplesGames,
+                            subtitle: AppLocalizations.of(context).couplesGamesSubtitle,
                             icon: Icons.sports_esports,
                             iconBg: const Color(0xFFFF4D8D),
                             hasAccess: _featureAccess['games'] ?? false,
                             onTap: () => _navigateToFeature('games'),
                           ),
                           _buildFeatureCard(
-                            title: 'Kegel Exercises',
-                            subtitle:
-                                'Guided routines for intimate wellness',
+                            title: AppLocalizations.of(context).kegelExercises,
+                            subtitle: AppLocalizations.of(context).kegelExercisesSubtitle,
                             icon: Icons.show_chart,
                             iconBg: const Color(0xFF9E64FF),
                             hasAccess: _featureAccess['kegel'] ?? false,
                             onTap: () => _navigateToFeature('kegel'),
                           ),
                           _buildFeatureCard(
-                            title: 'AI Chat',
-                            subtitle: 'Get personalized relationship guidance',
+                            title: AppLocalizations.of(context).aiChat,
+                            subtitle: AppLocalizations.of(context).aiChatSubtitle,
                             icon: Icons.chat_bubble_outline,
                             iconBg: const Color(0xFF6B66FF),
                             hasAccess: _featureAccess['chat'] ?? false,
@@ -401,9 +407,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Show sign out button at bottom
                           ListTile(
                             leading: const Icon(Icons.logout, color: Colors.red),
-                            title: const Text('Sign Out'),
+                            title: Text(AppLocalizations.of(context).signOut),
                             onTap: () async {
-                              await _authService.logout();
+                              try {
+                                await _authService.logout();
+                                // Navigation will be handled automatically by auth state listener in main.dart
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to sign out: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
                             },
                           ),
                         ],

@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:couple_wellness/constants/app_colors.dart';
+import 'package:couple_wellness/l10n/app_localizations.dart';
+import 'package:couple_wellness/services/chat_service.dart';
 import 'package:couple_wellness/utils/responsive_sizer.dart';
 import 'package:flutter/material.dart';
 
@@ -11,6 +14,56 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final ChatService _chatService = ChatService();
+  final ScrollController _scrollController = ScrollController();
+  bool _isSending = false;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    final message = _messageController.text.trim();
+    if (message.isEmpty || _isSending) return;
+
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      await _chatService.sendMessage(message);
+      _messageController.clear();
+
+      // Scroll to bottom after sending
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +76,56 @@ class _ChatScreenState extends State<ChatScreen> {
 
           // 2. Chat Messages Area
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-              children: [
-                _buildAIMessage(
-                  "Hello! I'm here to support your relationship journey. How can I help you today?",
-                ),
-              ],
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _chatService.getChatMessages(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error loading messages: ${snapshot.error}'),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.adaptSize),
+                      child: Text(
+                        AppLocalizations.of(context).aiGreeting,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 16.fSize,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                final messages = snapshot.data!.docs;
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final messageData = messages[index].data() as Map<String, dynamic>;
+                    final isUser = messageData['isUser'] ?? false;
+                    final message = messageData['message'] ?? '';
+
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 16.h),
+                      child: isUser
+                          ? _buildUserMessage(message)
+                          : _buildAIMessage(message),
+                    );
+                  },
+                );
+              },
             ),
           ),
 
@@ -73,7 +169,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               SizedBox(width: 12.w),
               Text(
-                "Chat",
+                AppLocalizations.of(context).chat,
                 style: TextStyle(
                   fontSize: 32.fSize,
                   fontWeight: FontWeight.bold,
@@ -83,9 +179,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
           SizedBox(height: 8.h),
-          const Text(
-            "Your AI relationship companion",
-            style: TextStyle(color: Colors.white70),
+          Text(
+            AppLocalizations.of(context).aiCompanion,
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
@@ -136,6 +232,51 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildUserMessage(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // Message Bubble
+        Flexible(
+          child: Container(
+            padding: EdgeInsets.all(16.adaptSize),
+            decoration: BoxDecoration(
+              color: AppColors.brandPurple,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20.adaptSize),
+                bottomLeft: Radius.circular(20.adaptSize),
+                bottomRight: Radius.circular(20.adaptSize),
+              ),
+            ),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 15.fSize,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        // User Icon Avatar
+        Container(
+          padding: EdgeInsets.all(8.adaptSize),
+          decoration: const BoxDecoration(
+            color: AppColors.brandPurple,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.person,
+            color: Colors.white,
+            size: 20.adaptSize,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildChatFooter() {
     return Container(
       padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 20.h),
@@ -163,7 +304,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
-                    "For informational purposes only. Consult a doctor for medical advice.",
+                    AppLocalizations.of(context).chatDisclaimer,
                     style: TextStyle(
                       color: Colors.orange.shade900,
                       fontSize: 12.fSize,
@@ -187,7 +328,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: TextField(
                     controller: _messageController,
                     decoration: InputDecoration(
-                      hintText: "Type your message...",
+                      hintText: AppLocalizations.of(context).typeMessage,
                       hintStyle: TextStyle(
                         color: Colors.grey,
                         fontSize: 14.fSize,
@@ -195,27 +336,38 @@ class _ChatScreenState extends State<ChatScreen> {
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 20.w),
                     ),
+                    maxLines: null,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
               ),
               SizedBox(width: 12.w),
               // Send Button
               GestureDetector(
-                onTap: () {
-                  // Handle send logic
-                },
+                onTap: _isSending ? null : _sendMessage,
                 child: Container(
                   height: 54.h,
                   width: 54.h,
-                  decoration: const BoxDecoration(
-                    color: AppColors.brandPurple,
+                  decoration: BoxDecoration(
+                    color: _isSending
+                        ? AppColors.brandPurple.withOpacity(0.5)
+                        : AppColors.brandPurple,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.send_rounded,
-                    color: Colors.white,
-                    size: 24.adaptSize,
-                  ),
+                  child: _isSending
+                      ? Padding(
+                          padding: EdgeInsets.all(15.adaptSize),
+                          child: const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 24.adaptSize,
+                        ),
                 ),
               ),
             ],

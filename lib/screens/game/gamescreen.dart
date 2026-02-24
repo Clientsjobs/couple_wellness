@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:couple_wellness/services/auth_service.dart';
 import 'package:couple_wellness/services/game_service.dart';
 import 'package:couple_wellness/utils/responsive_sizer.dart';
+import 'package:couple_wellness/screens/game/truth_or_truth_game.dart';
+import 'package:couple_wellness/screens/game/love_language_quiz.dart';
+import 'package:couple_wellness/l10n/app_localizations.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GamesScreen extends StatefulWidget {
   const GamesScreen({super.key});
@@ -12,7 +15,7 @@ class GamesScreen extends StatefulWidget {
 
 class _GamesScreenState extends State<GamesScreen> {
   final GameService _gameService = GameService();
-  final AuthService _authService = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Map<String, dynamic>> _games = [];
   Map<String, dynamic>? _userProgress;
@@ -27,26 +30,94 @@ class _GamesScreenState extends State<GamesScreen> {
 
   Future<void> _loadGames() async {
     try {
+      if (!mounted) return;
+
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
 
-      // Load games from Firestore
-      final games = await _gameService.getAllGames();
+      // Load games from Firestore dynamically
+      final gamesSnapshot = await _firestore
+          .collection('games')
+          .where('isActive', isEqualTo: true)
+          .orderBy('order')
+          .get();
+
+      List<Map<String, dynamic>> loadedGames = [];
+
+      if (gamesSnapshot.docs.isEmpty) {
+        // Fallback to default games if Firestore is empty
+        loadedGames = _getDefaultGames();
+      } else {
+        loadedGames = gamesSnapshot.docs.map((doc) {
+          return {
+            'id': doc.id,
+            ...doc.data(),
+          };
+        }).toList();
+      }
+
+      // Load user progress
       final progress = await _gameService.getUserGameProgress();
 
+      if (!mounted) return;
+
       setState(() {
-        _games = games;
+        _games = loadedGames;
         _userProgress = progress;
         _isLoading = false;
       });
     } catch (e) {
+      // If Firestore fails, use default games
+      if (!mounted) return;
+
       setState(() {
-        _errorMessage = 'Failed to load games: $e';
+        _games = _getDefaultGames();
         _isLoading = false;
       });
+
+      // Still try to load progress
+      try {
+        final progress = await _gameService.getUserGameProgress();
+        if (!mounted) return;
+
+        setState(() {
+          _userProgress = progress;
+        });
+      } catch (e) {
+        // Ignore progress error
+      }
     }
+  }
+
+  List<Map<String, dynamic>> _getDefaultGames() {
+    return [
+      {
+        'id': 'truth_or_truth',
+        'name': 'Truth or Truth',
+        'description': 'Deep questions to spark meaningful conversations',
+        'icon': 'favorite_border',
+        'color': '#FF4D8D',
+        'headerColor': '#FF4D8D',
+        'players': '2 players',
+        'time': '15 min',
+        'isPremium': false,
+        'screenType': 'truth_or_truth',
+      },
+      {
+        'id': 'love_language_quiz',
+        'name': 'Love Language Quiz',
+        'description': 'Discover how you both give and receive love',
+        'icon': 'people',
+        'color': '#B388FF',
+        'headerColor': '#B388FF',
+        'players': '2 players',
+        'time': '10 min',
+        'isPremium': true,
+        'screenType': 'quiz',
+      },
+    ];
   }
 
   Future<void> _startGame(String gameId) async {
@@ -59,20 +130,39 @@ class _GamesScreenState extends State<GamesScreen> {
         return;
       }
 
-      // Record game start
-      await _gameService.startGameSessionById(gameId);
+      // Find game data
+      final gameData = _games.firstWhere(
+        (game) => game['id'] == gameId,
+        orElse: () => {},
+      );
 
-      // Navigate to specific game screen based on gameId
+      if (gameData.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).gameNotFound)),
+          );
+        }
+        return;
+      }
+
+      // Navigate to specific game screen based on screenType
+      final screenType = gameData['screenType'] ?? gameId;
       Widget gameScreen;
-      switch (gameId) {
+
+      switch (screenType) {
         case 'truth_or_truth':
           gameScreen = const TruthOrTruthGameScreen();
           break;
-        case 'love_language_quiz':
+        case 'quiz':
           gameScreen = const LoveLanguageQuizScreen();
           break;
         default:
-          gameScreen = const PlaceholderGameScreen();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(AppLocalizations.of(context).gameComingSoon)),
+            );
+          }
+          return;
       }
 
       if (mounted) {
@@ -85,7 +175,7 @@ class _GamesScreenState extends State<GamesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error starting game: $e')));
+        ).showSnackBar(SnackBar(content: Text('${AppLocalizations.of(context).errorStartingGame}: $e')));
       }
     }
   }
@@ -94,14 +184,12 @@ class _GamesScreenState extends State<GamesScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Premium Feature'),
-        content: const Text(
-          'This game requires a premium subscription. Upgrade to access all games!',
-        ),
+        title: Text(AppLocalizations.of(context).premiumFeature),
+        content: Text(AppLocalizations.of(context).premiumGameMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -111,7 +199,7 @@ class _GamesScreenState extends State<GamesScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF8B42FF),
             ),
-            child: const Text('Upgrade'),
+            child: Text(AppLocalizations.of(context).upgrade),
           ),
         ],
       ),
@@ -119,7 +207,7 @@ class _GamesScreenState extends State<GamesScreen> {
   }
 
   String _getGameStatus(String gameId) {
-    if (_userProgress == null) return 'Not Started';
+    if (_userProgress == null) return AppLocalizations.of(context).notStarted;
 
     final playedGames = _userProgress!['playedGames'] as List<dynamic>? ?? [];
     final isPlayed = playedGames.any((g) => g['gameId'] == gameId);
@@ -128,12 +216,12 @@ class _GamesScreenState extends State<GamesScreen> {
       final gameData = playedGames.firstWhere((g) => g['gameId'] == gameId);
       final completedAt = gameData['completedAt'];
       if (completedAt != null) {
-        return 'Completed';
+        return AppLocalizations.of(context).completed;
       }
-      return 'In Progress';
+      return AppLocalizations.of(context).inProgress;
     }
 
-    return 'Not Started';
+    return AppLocalizations.of(context).notStarted;
   }
 
   int _getTimesPlayed(String gameId) {
@@ -143,12 +231,47 @@ class _GamesScreenState extends State<GamesScreen> {
     return sessions.where((s) => s['gameId'] == gameId).length;
   }
 
+  Color _parseColor(String? colorString) {
+    if (colorString == null || colorString.isEmpty) {
+      return const Color(0xFF8B42FF); // Default purple
+    }
+    try {
+      // Remove # if present
+      final hexColor = colorString.replaceAll('#', '');
+      return Color(int.parse('FF$hexColor', radix: 16));
+    } catch (e) {
+      return const Color(0xFF8B42FF); // Default purple
+    }
+  }
+
+  IconData _parseIcon(String? iconName) {
+    if (iconName == null || iconName.isEmpty) {
+      return Icons.sports_esports;
+    }
+
+    // Map of icon names to IconData
+    final iconMap = {
+      'favorite_border': Icons.favorite_border,
+      'favorite': Icons.favorite,
+      'people': Icons.people,
+      'quiz': Icons.quiz,
+      'sports_esports': Icons.sports_esports,
+      'psychology': Icons.psychology,
+      'chat_bubble_outline': Icons.chat_bubble_outline,
+      'emoji_emotions': Icons.emoji_emotions,
+      'casino': Icons.casino,
+      'extension': Icons.extension,
+      'lightbulb_outline': Icons.lightbulb_outline,
+      'celebration': Icons.celebration,
+    };
+
+    return iconMap[iconName] ?? Icons.sports_esports;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Specific local colors for this screen's UI elements
     const Color headerPink = Color(0xFFE91E63);
-    const Color cardPinkHeader = Color(0xFFFF4D8D);
-    const Color cardPurpleHeader = Color(0xFFB388FF);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FF),
@@ -178,7 +301,7 @@ class _GamesScreenState extends State<GamesScreen> {
                 ),
                 SizedBox(height: 20.h),
                 Text(
-                  "Couples Games",
+                  AppLocalizations.of(context).couplesGames,
                   style: TextStyle(
                     fontSize: 32.fSize,
                     fontWeight: FontWeight.bold,
@@ -187,7 +310,7 @@ class _GamesScreenState extends State<GamesScreen> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  "Play together, grow together",
+                  AppLocalizations.of(context).playTogether,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 16.fSize,
@@ -209,7 +332,7 @@ class _GamesScreenState extends State<GamesScreen> {
                         Text(_errorMessage!),
                         ElevatedButton(
                           onPressed: _loadGames,
-                          child: const Text('Retry'),
+                          child: Text(AppLocalizations.of(context).retry),
                         ),
                       ],
                     ),
@@ -223,28 +346,21 @@ class _GamesScreenState extends State<GamesScreen> {
                         vertical: 24.h,
                       ),
                       children: [
-                        // Static games with Firebase integration
-                        _buildGameCard(
-                          gameId: 'truth_or_truth',
-                          title: "Truth or Truth",
-                          description:
-                              "Deep questions to spark meaningful conversations",
-                          players: "2 players",
-                          time: "15 min",
-                          headerColor: cardPinkHeader,
-                          icon: Icons.favorite_border,
-                        ),
-                        SizedBox(height: 24.h),
-                        _buildGameCard(
-                          gameId: 'love_language_quiz',
-                          title: "Love Language Quiz",
-                          description:
-                              "Discover how you both give and receive love",
-                          players: "2 players",
-                          time: "10 min",
-                          headerColor: cardPurpleHeader,
-                          icon: Icons.people,
-                        ),
+                        // Dynamic games from Firestore
+                        ..._games.map((game) {
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 24.h),
+                            child: _buildGameCard(
+                              gameId: game['id'],
+                              title: game['name'],
+                              description: game['description'],
+                              players: game['players'],
+                              time: game['time'],
+                              headerColor: _parseColor(game['headerColor']),
+                              icon: _parseIcon(game['icon']),
+                            ),
+                          );
+                        }),
                         SizedBox(height: 40.h),
                       ],
                     ),
@@ -358,7 +474,7 @@ class _GamesScreenState extends State<GamesScreen> {
                 if (timesPlayed > 0) ...[
                   SizedBox(height: 8.h),
                   Text(
-                    'Played $timesPlayed ${timesPlayed == 1 ? 'time' : 'times'}',
+                    '${AppLocalizations.of(context).played} $timesPlayed ${timesPlayed == 1 ? AppLocalizations.of(context).time : AppLocalizations.of(context).times}',
                     style: TextStyle(
                       color: headerColor,
                       fontSize: 12.fSize,
@@ -372,10 +488,10 @@ class _GamesScreenState extends State<GamesScreen> {
                 Row(
                   children: [
                     // Players Info
-                    _buildIconLabel(Icons.people_outline, players),
+                    Flexible(child: _buildIconLabel(Icons.people_outline, players)),
                     SizedBox(width: 16.w),
                     // Time Info
-                    _buildIconLabel(Icons.timer_outlined, time),
+                    Flexible(child: _buildIconLabel(Icons.timer_outlined, time)),
 
                     const Spacer(),
 
@@ -386,9 +502,9 @@ class _GamesScreenState extends State<GamesScreen> {
                         onPressed: () => _startGame(gameId),
                         icon: Icon(Icons.play_arrow, size: 18.adaptSize),
                         label: Text(
-                          status == 'Not Started' ? "Play Now" : "Play Again",
+                          status == AppLocalizations.of(context).notStarted ? AppLocalizations.of(context).playNow : AppLocalizations.of(context).playAgain,
                           style: TextStyle(
-                            fontSize: 14.fSize,
+                            fontSize: Localizations.localeOf(context).languageCode == 'fr' ? 12.fSize : 14.fSize,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -396,7 +512,7 @@ class _GamesScreenState extends State<GamesScreen> {
                           backgroundColor: const Color(0xFF8B42FF),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                          padding: EdgeInsets.symmetric(horizontal: 12.w),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.adaptSize),
                           ),
@@ -415,60 +531,18 @@ class _GamesScreenState extends State<GamesScreen> {
 
   Widget _buildIconLabel(IconData icon, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 18.adaptSize, color: Colors.grey.shade500),
         SizedBox(width: 6.w),
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 13.fSize),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13.fSize),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
-    );
-  }
-}
-
-// Placeholder screens for individual games
-class TruthOrTruthGameScreen extends StatelessWidget {
-  const TruthOrTruthGameScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Truth or Truth'),
-        backgroundColor: const Color(0xFFFF4D8D),
-      ),
-      body: const Center(child: Text('Truth or Truth Game Content')),
-    );
-  }
-}
-
-class LoveLanguageQuizScreen extends StatelessWidget {
-  const LoveLanguageQuizScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Love Language Quiz'),
-        backgroundColor: const Color(0xFFB388FF),
-      ),
-      body: const Center(child: Text('Love Language Quiz Content')),
-    );
-  }
-}
-
-class PlaceholderGameScreen extends StatelessWidget {
-  const PlaceholderGameScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Game'),
-        backgroundColor: const Color(0xFF8B42FF),
-      ),
-      body: const Center(child: Text('Game Content Coming Soon')),
     );
   }
 }

@@ -40,10 +40,10 @@ class _MainDashboardState extends State<MainDashboard> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
           BottomNavigationBarItem(
-            icon: Icon(Icons.videogame_asset_outlined),
+            icon: Icon(Icons.sports_esports),
             label: "Games",
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.bolt), label: "Kegel"),
+          BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: "Kegel"),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),
             label: "Chat",

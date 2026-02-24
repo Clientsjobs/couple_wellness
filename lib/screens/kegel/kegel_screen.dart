@@ -1,4 +1,5 @@
 import 'package:couple_wellness/constants/app_colors.dart';
+import 'package:couple_wellness/l10n/app_localizations.dart';
 import 'package:couple_wellness/screens/kegel/kegel_play_menu_screen.dart';
 import 'package:couple_wellness/screens/kegel/kegel_play_screen.dart';
 import 'package:couple_wellness/services/kegel_service.dart';
@@ -87,7 +88,7 @@ class _KegelScreenState extends State<KegelScreen> {
                     _buildProgressCard(),
                     SizedBox(height: 32.h),
                     Text(
-                      "Exercise Routines",
+                      AppLocalizations.of(context).exerciseRoutines,
                       style: TextStyle(
                         fontSize: 18.fSize,
                         fontWeight: FontWeight.bold,
@@ -96,22 +97,22 @@ class _KegelScreenState extends State<KegelScreen> {
                     ),
                     SizedBox(height: 16.h),
                     _buildRoutineItem(
-                      "Beginner Routine",
-                      "5 minutes • 3 sets",
+                      AppLocalizations.of(context).beginnerRoutine,
+                      "5 ${AppLocalizations.of(context).minutes} • 3 ${AppLocalizations.of(context).sets}",
                       Colors.green,
                       Icons.emoji_events_outlined,
                       onTap: () => _navigateToPlayMenu(),
                     ),
                     _buildRoutineItem(
-                      "Intermediate Routine",
-                      "8 minutes • 4 sets",
+                      AppLocalizations.of(context).intermediateRoutine,
+                      "8 ${AppLocalizations.of(context).minutes} • 4 ${AppLocalizations.of(context).sets}",
                       Colors.purpleAccent,
                       Icons.emoji_events_outlined,
                       onTap: () => _navigateToPlayMenu(),
                     ),
                     _buildRoutineItem(
-                      "Advanced Routine",
-                      "12 minutes • 5 sets",
+                      AppLocalizations.of(context).advancedRoutine,
+                      "12 ${AppLocalizations.of(context).minutes} • 5 ${AppLocalizations.of(context).sets}",
                       Colors.redAccent,
                       Icons.emoji_events_outlined,
                       onTap: () => _navigateToPlayMenu(),
@@ -123,16 +124,14 @@ class _KegelScreenState extends State<KegelScreen> {
                     _buildInfoSection(
                       icon: Icons.info_outline,
                       iconColor: Colors.blueAccent,
-                      title: "About Kegel Exercises",
-                      content:
-                          "Kegel exercises strengthen the pelvic floor muscles, which support the bladder, uterus, and bowel. These exercises can improve intimate wellness, bladder control, and enhance physical connection with your partner.",
+                      title: AppLocalizations.of(context).aboutKegel,
+                      content: AppLocalizations.of(context).aboutKegelContent,
                     ),
                     _buildInfoSection(
                       icon: Icons.track_changes,
                       iconColor: Colors.pink,
-                      title: "Target Muscle",
-                      content:
-                          "Pelvic floor muscles - the muscles you use to stop urination midstream.",
+                      title: AppLocalizations.of(context).targetMuscle,
+                      content: AppLocalizations.of(context).targetMuscleContent,
                     ),
                     _buildHowToPerformSection(),
 
@@ -184,7 +183,7 @@ class _KegelScreenState extends State<KegelScreen> {
               ),
               SizedBox(width: 12.w),
               Text(
-                "Kegel",
+                AppLocalizations.of(context).kegel,
                 style: TextStyle(
                   fontSize: 32.fSize,
                   fontWeight: FontWeight.bold,
@@ -194,9 +193,9 @@ class _KegelScreenState extends State<KegelScreen> {
             ],
           ),
           SizedBox(height: 8.h),
-          const Text(
-            "Your intimate wellness journey",
-            style: TextStyle(color: Colors.white70),
+          Text(
+            AppLocalizations.of(context).intimateWellnessJourney,
+            style: const TextStyle(color: Colors.white70),
           ),
         ],
       ),
@@ -225,7 +224,7 @@ class _KegelScreenState extends State<KegelScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Your Progress",
+                  AppLocalizations.of(context).yourProgress,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16.fSize,
@@ -235,14 +234,14 @@ class _KegelScreenState extends State<KegelScreen> {
                 Row(
                   children: [
                     _buildProgressStat(
-                      "Week Streak",
+                      AppLocalizations.of(context).weekStreak,
                       "$_weekStreak",
                       const Color(0xFFF5F3FF),
                       Colors.orange,
                     ),
                     SizedBox(width: 12.w),
                     _buildProgressStat(
-                      "Completed",
+                      AppLocalizations.of(context).completedLabel,
                       "$_totalCompleted",
                       const Color(0xFFF0FFF4),
                       Colors.green,
@@ -254,7 +253,7 @@ class _KegelScreenState extends State<KegelScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Daily Goal",
+                      AppLocalizations.of(context).dailyGoal,
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13.fSize,
@@ -314,11 +313,13 @@ class _KegelScreenState extends State<KegelScreen> {
                   size: 18.adaptSize,
                 ),
                 SizedBox(width: 8.w),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12.fSize,
-                    color: Colors.grey.shade700,
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12.fSize,
+                      color: Colors.grey.shade700,
+                    ),
                   ),
                 ),
               ],
@@ -459,7 +460,7 @@ class _KegelScreenState extends State<KegelScreen> {
               ),
               SizedBox(width: 12.w),
               Text(
-                "How to Perform",
+                AppLocalizations.of(context).howToPerform,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16.fSize,
@@ -470,26 +471,26 @@ class _KegelScreenState extends State<KegelScreen> {
           SizedBox(height: 20.h),
           _buildStep(
             1,
-            "Identify the Right Muscles",
-            "Imagine stopping urination or holding gas. Those are your pelvic floor muscles.",
+            AppLocalizations.of(context).step1Title,
+            AppLocalizations.of(context).step1Desc,
             Colors.blueAccent,
           ),
           _buildStep(
             2,
-            "Contract & Hold",
-            "Tighten these muscles and hold for the specified time. Don't hold your breath.",
+            AppLocalizations.of(context).step2Title,
+            AppLocalizations.of(context).step2Desc,
             Colors.pinkAccent,
           ),
           _buildStep(
             3,
-            "Relax Completely",
-            "Release the muscles fully and rest between repetitions.",
+            AppLocalizations.of(context).step3Title,
+            AppLocalizations.of(context).step3Desc,
             Colors.purpleAccent,
           ),
           _buildStep(
             4,
-            "Stay Consistent",
-            "Practice daily for best results. You should notice improvements within weeks.",
+            AppLocalizations.of(context).step4Title,
+            AppLocalizations.of(context).step4Desc,
             Colors.blue,
           ),
         ],
@@ -559,7 +560,7 @@ class _KegelScreenState extends State<KegelScreen> {
               ),
               SizedBox(width: 12.w),
               Text(
-                "Important Tips",
+                AppLocalizations.of(context).importantTips,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16.fSize,
@@ -569,10 +570,10 @@ class _KegelScreenState extends State<KegelScreen> {
           ),
           SizedBox(height: 12.h),
           ...[
-            "Don't tighten your stomach, thighs, or buttocks",
-            "Breathe normally throughout the exercise",
-            "Start with beginner level and progress gradually",
-            "Practice on an empty bladder for comfort",
+            AppLocalizations.of(context).tip1,
+            AppLocalizations.of(context).tip2,
+            AppLocalizations.of(context).tip3,
+            AppLocalizations.of(context).tip4,
           ].map(
             (tip) => Padding(
               padding: EdgeInsets.only(bottom: 8.h),
@@ -619,7 +620,7 @@ class _KegelScreenState extends State<KegelScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Medical Disclaimer",
+                  AppLocalizations.of(context).medicalDisclaimer,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.orange.shade900,
@@ -628,7 +629,7 @@ class _KegelScreenState extends State<KegelScreen> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  "This app is for informational and educational purposes only. Please consult a healthcare professional for any medical advice or concerns.",
+                  AppLocalizations.of(context).medicalDisclaimerContent,
                   style: TextStyle(
                     color: Colors.orange.shade800,
                     fontSize: 12.fSize,

@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:couple_wellness/constants/app_colors.dart';
 import 'package:couple_wellness/services/user_service.dart';
 import 'package:couple_wellness/utils/responsive_sizer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -14,11 +16,13 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   final UserService _userService = UserService();
   final TextEditingController _nameController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
 
   bool _isLoading = true;
   String _email = '';
   String _displayName = '';
   String _subscriptionStatus = 'free';
+  String? _profilePictureUrl;
 
   @override
   void initState() {
@@ -31,12 +35,14 @@ class _AccountScreenState extends State<AccountScreen> {
       final user = FirebaseAuth.instance.currentUser;
       final userData = await _userService.getUserData();
       final status = await _userService.getSubscriptionStatus();
+      final profileUrl = await _userService.getProfilePictureUrl();
 
       if (mounted) {
         setState(() {
           _email = user?.email ?? '';
           _displayName = userData?['displayName'] ?? '';
           _subscriptionStatus = status;
+          _profilePictureUrl = profileUrl;
           _nameController.text = _displayName;
           _isLoading = false;
         });
@@ -106,6 +112,87 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
     );
+  }
+
+  /// Show image source selection dialog
+  void _showImageSourceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Choose Profile Picture'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.brandPurple),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.brandPurple),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            if (_profilePictureUrl != null)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Remove Picture'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _removeProfilePicture();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Pick image from camera or gallery
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+
+      _showSnackBar('Uploading profile picture...');
+
+      final imageFile = File(pickedFile.path);
+      final downloadUrl = await _userService.uploadProfilePicture(imageFile);
+
+      setState(() {
+        _profilePictureUrl = downloadUrl;
+      });
+
+      _showSnackBar('Profile picture updated successfully');
+    } catch (e) {
+      _showSnackBar('Failed to upload picture: $e', isError: true);
+    }
+  }
+
+  /// Remove profile picture
+  Future<void> _removeProfilePicture() async {
+    try {
+      await _userService.deleteProfilePicture();
+      setState(() {
+        _profilePictureUrl = null;
+      });
+      _showSnackBar('Profile picture removed');
+    } catch (e) {
+      _showSnackBar('Failed to remove picture: $e', isError: true);
+    }
   }
 
   @override
@@ -200,14 +287,43 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 50.adaptSize,
-            backgroundColor: AppColors.brandPurple.withOpacity(0.1),
-            child: Icon(
-              Icons.person,
-              size: 50.adaptSize,
-              color: AppColors.brandPurple,
-            ),
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 50.adaptSize,
+                backgroundColor: AppColors.brandPurple.withOpacity(0.1),
+                backgroundImage: _profilePictureUrl != null
+                    ? NetworkImage(_profilePictureUrl!)
+                    : null,
+                child: _profilePictureUrl == null
+                    ? Icon(
+                        Icons.person,
+                        size: 50.adaptSize,
+                        color: AppColors.brandPurple,
+                      )
+                    : null,
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _showImageSourceDialog,
+                  child: Container(
+                    padding: EdgeInsets.all(8.adaptSize),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPurple,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt,
+                      size: 16.adaptSize,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: 16.h),
           Text(
